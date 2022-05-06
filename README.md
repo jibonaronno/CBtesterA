@@ -10,6 +10,6 @@ BlackPill. STM32F401CCU6 Development Board.
 ### Now setup the TIM2 as follows. Note: Trigger Event Selection Must be set to Update Event.
 <img alt="NO IMAGE" src="timA.png"><br><br>
 
-Reference : <br><br>
-[Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)
-[STM32CubeIDE basics - 10 ADC DMA TIM HAL lab](https://www.youtube.com/watch?v=pLsAhJ8umJk)
+Reference : <br>
+[Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)<br>
+[STM32CubeIDE basics - 10 ADC DMA TIM HAL lab](https://www.youtube.com/watch?v=pLsAhJ8umJk)<br>
