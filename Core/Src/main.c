@@ -16,6 +16,8 @@
   * This code is inspired from https://www.youtube.com/watch?v=AloHXBk6Bfk -
   * Set up multiple ADCs on STM32 microcontrollers using DMA video.
   *
+  * PWM Operation instructed from https://www.youtube.com/watch?v=-AFCcfzK9xc
+  *
   ******************************************************************************
   */
 #include "usbd_cdc_if.h"
@@ -141,6 +143,11 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
 
   HAL_TIM_Base_Start(&htim2);
+
+  /*
+   * PWM Operation instructed from https://www.youtube.com/watch?v=-AFCcfzK9xc
+   */
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
   //CDC_Init_FS();
 
