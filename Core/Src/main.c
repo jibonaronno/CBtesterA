@@ -77,6 +77,12 @@ const int adcChannelCount = 1;
 volatile int adcConversionComplete = 0;
 volatile uint32_t millis = 0;
 volatile uint32_t conv_rate = 0;
+volatile uint32_t ad1_audio = 0;
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 void DMA_ADC_Complete(DMA_HandleTypeDef *_hdma)
 {
@@ -166,6 +172,8 @@ int main(void)
 			  sprintf(strA1, "A1 - %d Rate:%d\n", ad1_raw[0], conv_rate);
 			  CDC_Transmit_FS(strA1, strlen(strA1));
 			  conv_rate = 0;
+			  ad1_audio = map(ad1_raw[1], 0, 4096, 0, 254);
+			  TIM1->CCR1 = ad1_audio;
 
 			  //In the video example following function is called at the end of every conversion.
 			  //But my goal is to start the conversion from the trigger of the TIM2
