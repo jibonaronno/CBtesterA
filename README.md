@@ -21,7 +21,8 @@ ___
 [STM32CubeIDE basics - 05 TIM PWM HAL lab](https://www.youtube.com/watch?v=-AFCcfzK9xc)<br>
 
 Configure TIM1 as below. <br><br>
-<img alt="NO IMAGE" src="TIM1_PWM.png"><br><br>
+<img alt="NO IMAGE" src="TIM1_PWM.png"><br>
+<img alt="NO IMAGE" src="TIM1_PWM0.png"><br><br>
 
 Reference : <br>
 [Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)<br>
