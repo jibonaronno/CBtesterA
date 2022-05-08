@@ -28,4 +28,5 @@ Reference : <br>
 [Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)<br>
 [STM32CubeIDE basics - 10 ADC DMA TIM HAL lab](https://www.youtube.com/watch?v=pLsAhJ8umJk)<br>
 [create audio signals with PWM STM32F103C8](https://marcelmg.github.io/pwm_dac_sound/)<br>
-[STM32 TIMERS #1. PWM Output || DMA](https://www.youtube.com/watch?v=OwlfFp8fPN0)
+[STM32 TIMERS #1. PWM Output || DMA](https://www.youtube.com/watch?v=OwlfFp8fPN0)<br>
+[EmbeddedExpertIO](https://embeddedexpert.io/?p=858&fbclid=IwAR2bhHOcd__Dlb0FOMDrgP93dbdVjOlu2wdS3iJBXY4OYVTGU9i-guuQK3w)<br>
