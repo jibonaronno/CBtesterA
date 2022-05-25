@@ -11,12 +11,10 @@
   * USB DFU Mode once or twice, When I activated CDC USB VCP, after that Win7
   * cannot identify the DFU device. But the VCP is okay.
   *
-  * In This code I am trying to achieve Audio In and Out through ADC and DAC. For
+  * In This code I am trying to achive Audio In and Out through ADC and DAC. For
   * This I am enabling Timer2 Triggered ADC conversion with DMA support.
   * This code is inspired from https://www.youtube.com/watch?v=AloHXBk6Bfk -
   * Set up multiple ADCs on STM32 microcontrollers using DMA video.
-  *
-  * PWM Operation instructed from https://www.youtube.com/watch?v=-AFCcfzK9xc
   *
   ******************************************************************************
   */
@@ -79,6 +77,13 @@ volatile uint32_t millis = 0;
 volatile uint32_t conv_rate = 0;
 volatile uint32_t ad1_audio = 0;
 
+uint32_t buf_idx = 0;
+uint8_t buf_num = 1;
+uint32_t buf1[5000];
+uint32_t buf2[5000];
+
+uint32_t *buf = buf2;
+
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -89,10 +94,81 @@ void DMA_ADC_Complete(DMA_HandleTypeDef *_hdma)
 
 }
 
+static float ADC_OLD_Value;
+static float P_k1_k1;
+
+//static float Q = 0.0001;//Q: Regulation noise, Q increases, dynamic response becomes faster, and convergence stability becomes worse
+static float Q = 0.0005;//Q: Regulation noise, Q increases, dynamic response becomes faster, and convergence stability becomes worse
+//static float R = 0.005; //R: Test noise, R increases, dynamic response becomes slower, convergence stability becomes better
+static float R = 0.2;
+static float Kg = 0;
+static float P_k_k1 = 0.5;
+static float kalman_adc_old=0;
+
+unsigned long kalman_filter(unsigned long ADC_Value)
+{
+    float x_k1_k1,x_k_k1;
+    //static float ADC_OLD_Value;
+    float Z_k;
+
+
+    float kalman_adc;
+
+    Z_k = ADC_Value;
+    x_k1_k1 = kalman_adc_old;
+
+    x_k_k1 = x_k1_k1;
+    P_k_k1 = P_k1_k1 + Q;
+
+    Kg = P_k_k1/(P_k_k1 + R);
+
+    kalman_adc = x_k_k1 + Kg * (Z_k - kalman_adc_old);
+    P_k1_k1 = (1 - Kg)*P_k_k1;
+    P_k_k1 = P_k1_k1;
+
+    ADC_OLD_Value = ADC_Value;
+    kalman_adc_old = kalman_adc;
+
+    return kalman_adc;
+}
+
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	adcConversionComplete = 1;
 	conv_rate++;
+	ad1_audio = ad1_raw[0] / 12; //32;
+	//TIM1->CCR1 = ad1_audio;
+
+	if(buf_num == 1)
+	{
+		if(buf_idx < 2000)
+		{
+			buf1[buf_idx] = ad1_audio;
+			TIM1->CCR1 = kalman_filter(buf2[buf_idx]);
+			buf_idx++;
+		}
+		else
+		{
+			buf_num = 2;
+			buf_idx = 0;
+		}
+	}
+	else if(buf_num == 2)
+	{
+		if(buf_idx < 2000)
+		{
+			buf2[buf_idx] = ad1_audio;
+			TIM1->CCR1 = kalman_filter(buf1[buf_idx]);
+			buf_idx++;
+		}
+		else
+		{
+			buf_num = 1;
+			buf_idx = 0;
+		}
+	}
+
 }
 
 /**************************
@@ -116,6 +192,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   uint32_t a_shot = 0;
+  uint32_t b_shot = 0;
 
   /* USER CODE END 1 */
 
@@ -150,9 +227,6 @@ int main(void)
 
   HAL_TIM_Base_Start(&htim2);
 
-  /*
-   * PWM Operation instructed from https://www.youtube.com/watch?v=-AFCcfzK9xc
-   */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
   //CDC_Init_FS();
@@ -169,16 +243,22 @@ int main(void)
 		  if(adcConversionComplete == 1)
 		  {
 			  adcConversionComplete = 0;
-			  sprintf(strA1, "A1 - %d Rate:%d\n", ad1_raw[0], conv_rate);
+			  //ad1_audio = ad1_raw[0] / 32; // map(ad1_raw[1], 0, 4096, 0, 254);
+			  sprintf(strA1, "A1 - %d Rate:%d Map:%d\n", ad1_raw[0], conv_rate, ad1_audio);
 			  CDC_Transmit_FS(strA1, strlen(strA1));
 			  conv_rate = 0;
-			  ad1_audio = map(ad1_raw[1], 0, 4096, 0, 254);
-			  TIM1->CCR1 = ad1_audio;
+			  //TIM1->CCR1 = ad1_audio;
 
 			  //In the video example following function is called at the end of every conversion.
 			  //But my goal is to start the conversion from the trigger of the TIM2
 			  //HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
 		  }
+	  }
+
+	  if(HAL_GetTick() > (b_shot + 10))
+	  {
+		  //ad1_audio = ad1_raw[0] / 32;
+		  //TIM1->CCR1 = ad1_audio;
 	  }
     /* USER CODE END WHILE */
 
@@ -301,9 +381,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 32;
+  htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 254;
+  htim1.Init.Period = 127;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -327,7 +407,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 8;
+  sConfigOC.Pulse = 64;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -374,7 +454,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 128;
+  htim2.Init.Prescaler = 32;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 50;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
