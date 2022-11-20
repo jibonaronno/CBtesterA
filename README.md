@@ -23,8 +23,13 @@ ___
 Configure TIM1 as below. <br><br>
 <img alt="NO IMAGE" src="TIM1_PWM.png"><br>
 <img alt="NO IMAGE" src="TIM1_PWM0.png"><br><br>
+<br><br>
+### As referenced from  Reference : <br>[Set up multiple ADCs on STM32 microcontrollers using DMA At Time 1:53](https://youtu.be/AloHXBk6Bfk?t=113)<br>
+it shows multiple ADC input setup in Cube IDE. <br >
+1. Set Number of Conversion = 2 Press Enter<br>
+2. Scan Conversion Mode = Enabled<br>
+3. DMA Settings should be configured as [DMA setup AT 3:48](https://youtu.be/AloHXBk6Bfk?t=228)
 
-Reference : <br>
 [Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)<br>
 [STM32CubeIDE basics - 10 ADC DMA TIM HAL lab](https://www.youtube.com/watch?v=pLsAhJ8umJk)<br>
 [create audio signals with PWM STM32F103C8](https://marcelmg.github.io/pwm_dac_sound/)<br>
