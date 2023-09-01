@@ -104,6 +104,9 @@ static float R = 0.2;
 static float Kg = 0;
 static float P_k_k1 = 0.5;
 static float kalman_adc_old=0;
+static int kalman_adc_int = 0;
+
+uint8_t  trip1 = 0;
 
 unsigned long kalman_filter(unsigned long ADC_Value)
 {
@@ -128,7 +131,7 @@ unsigned long kalman_filter(unsigned long ADC_Value)
 
     ADC_OLD_Value = ADC_Value;
     kalman_adc_old = kalman_adc;
-
+    kalman_adc_int = (int)kalman_adc;
     return kalman_adc;
 }
 
@@ -137,7 +140,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	adcConversionComplete = 1;
 	conv_rate++;
-	ad1_audio = ad1_raw[0] / 12; //32;
+	ad1_audio = ad1_raw[0]; //32;
 	//TIM1->CCR1 = ad1_audio;
 
 	if(buf_num == 1)
@@ -146,6 +149,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		{
 			buf1[buf_idx] = ad1_audio;
 			// <PWM OUTPUT> TIM1->CCR1 = kalman_filter(buf2[buf_idx]);
+			kalman_adc_int = kalman_filter(buf2[buf_idx]);
 			buf_idx++;
 		}
 		else
@@ -160,6 +164,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		{
 			buf2[buf_idx] = ad1_audio;
 			// <PWM OUTPUT> TIM1->CCR1 = kalman_filter(buf1[buf_idx]);
+			kalman_adc_int = kalman_filter(buf1[buf_idx]);
 			buf_idx++;
 		}
 		else
@@ -167,6 +172,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 			buf_num = 1;
 			buf_idx = 0;
 		}
+	}
+
+	if(kalman_adc_int > 320)
+	{
+		trip1 = 1;
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	}
 
 }
@@ -194,6 +205,7 @@ int main(void)
   uint32_t a_shot = 0;
   uint32_t b_shot = 0;
 
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -218,7 +230,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   MX_USB_DEVICE_Init();
-  MX_TIM1_Init();
+  //MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   //HAL_DMA_Start_IT(&hdma_adc1, SrcAddress, DstAddress, DataLength);
@@ -237,14 +249,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(HAL_GetTick() > (a_shot + 1000))
+	  if(HAL_GetTick() > (a_shot + 100))
 	  {
 		  a_shot = HAL_GetTick();
 		  if(adcConversionComplete == 1)
 		  {
 			  adcConversionComplete = 0;
 			  //ad1_audio = ad1_raw[0] / 32; // map(ad1_raw[1], 0, 4096, 0, 254);
-			  sprintf(strA1, "A1 - %d Rate:%d Map:%d\n", ad1_raw[0], conv_rate, ad1_audio);
+			  //sprintf(strA1, "A1:%d,Rate:%d,Map:%d\n", ad1_raw[0], conv_rate, ad1_audio);
+			  sprintf(strA1, "A1:%d,Kalman:%d,Map:%d\n", ad1_raw[0], kalman_adc_int, ad1_audio); // @suppress("Float formatting support")
 			  CDC_Transmit_FS(strA1, strlen(strA1));
 			  conv_rate = 0;
 			  //TIM1->CCR1 = ad1_audio;
@@ -255,8 +268,14 @@ int main(void)
 		  }
 	  }
 
-	  if(HAL_GetTick() > (b_shot + 10))
+	  if(HAL_GetTick() > (b_shot + 1000))
 	  {
+		  b_shot = HAL_GetTick();
+
+		  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
+		  //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+
 		  //ad1_audio = ad1_raw[0] / 32;
 		  //TIM1->CCR1 = ad1_audio;
 	  }
@@ -507,12 +526,24 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
