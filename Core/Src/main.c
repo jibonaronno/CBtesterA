@@ -69,7 +69,7 @@ static void MX_TIM1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-char strA1[30];
+char strA1[50];
 volatile uint16_t ad1_raw[5];
 const int adcChannelCount = 1;
 volatile int adcConversionComplete = 0;
@@ -180,6 +180,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	}
 
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
+
 }
 
 /**************************
@@ -230,7 +232,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   MX_USB_DEVICE_Init();
-  //MX_TIM1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   //HAL_DMA_Start_IT(&hdma_adc1, SrcAddress, DstAddress, DataLength);
@@ -239,7 +241,13 @@ int main(void)
 
   HAL_TIM_Base_Start(&htim2);
 
-  // <PWM OUTPUT> HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  // <PWM OUTPUT>
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+  TIM1->CCR1 = 0;
+  b_shot = HAL_GetTick();
+  HAL_Delay(1);
+  TIM1->CCR1 = 0;
 
   //CDC_Init_FS();
 
@@ -249,7 +257,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(HAL_GetTick() > (a_shot + 100))
+	  if(HAL_GetTick() > (a_shot + 1000))
 	  {
 		  a_shot = HAL_GetTick();
 		  if(adcConversionComplete == 1)
@@ -257,7 +265,7 @@ int main(void)
 			  adcConversionComplete = 0;
 			  //ad1_audio = ad1_raw[0] / 32; // map(ad1_raw[1], 0, 4096, 0, 254);
 			  //sprintf(strA1, "A1:%d,Rate:%d,Map:%d\n", ad1_raw[0], conv_rate, ad1_audio);
-			  sprintf(strA1, "A1:%d,Kalman:%d,Map:%d\n", ad1_raw[0], kalman_adc_int, ad1_audio); // @suppress("Float formatting support")
+			  sprintf(strA1, "A1:%d,Kalman:%d,Map:%d,Rate:%d\n", ad1_raw[0], kalman_adc_int, ad1_audio, conv_rate); // @suppress("Float formatting support")
 			  CDC_Transmit_FS(strA1, strlen(strA1));
 			  conv_rate = 0;
 			  //TIM1->CCR1 = ad1_audio;
@@ -266,11 +274,17 @@ int main(void)
 			  //But my goal is to start the conversion from the trigger of the TIM2
 			  //HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
 		  }
+
+		  CDC_Transmit_FS(".", 1);
 	  }
 
-	  if(HAL_GetTick() > (b_shot + 1000))
+	  if(HAL_GetTick() > (b_shot + 3000))
 	  {
 		  b_shot = HAL_GetTick();
+
+		  TIM1->CCR1 = 250;
+		  HAL_Delay(10);
+		  TIM1->CCR1 = 0;
 
 		  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 
@@ -307,10 +321,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 15;
-  RCC_OscInitStruct.PLL.PLLN = 144;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-  RCC_OscInitStruct.PLL.PLLQ = 5;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -325,7 +339,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -352,7 +366,7 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
@@ -361,7 +375,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
@@ -437,6 +451,11 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 10;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
