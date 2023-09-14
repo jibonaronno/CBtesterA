@@ -1,4 +1,4 @@
-# Timer Triggered ADC-DMA at 10 - 20 Kilo Sample Per Second for audio
+# Timer Triggered ADC-DMA at 10 - 20 Kilo Sample Per Second for audio. Modified for CBTester signal generation.
 BlackPill. STM32F401CCU6 Development Board.
 <img alt="NO IMAGE" src="blackpill.png"><br><br>
 Here we use Timer2 EVENT TRIGGER output to trigger the ADC start conversion at a regular interval. 
@@ -16,22 +16,7 @@ from the conversion rate.
 
 ___
 
-### We setup the PWM DAC as described in<br>
-[STM32 TIMERS #1. PWM Output || DMA](https://www.youtube.com/watch?v=OwlfFp8fPN0) and <br>
-[STM32CubeIDE basics - 05 TIM PWM HAL lab](https://www.youtube.com/watch?v=-AFCcfzK9xc)<br>
-
-Configure TIM1 as below. <br><br>
-<img alt="NO IMAGE" src="TIM1_PWM.png"><br>
-<img alt="NO IMAGE" src="TIM1_PWM0.png"><br><br>
-<br><br>
-### As referenced from  Reference : <br>[Set up multiple ADCs on STM32 microcontrollers using DMA At Time 1:53](https://youtu.be/AloHXBk6Bfk?t=113)<br>
-it shows multiple ADC input setup in Cube IDE. <br >
-1. Set Number of Conversion = 2 Press Enter<br>
-2. Scan Conversion Mode = Enabled<br>
-3. DMA Settings should be configured as [DMA setup AT 3:48](https://youtu.be/AloHXBk6Bfk?t=228)
-
-[Set up multiple ADCs on STM32 microcontrollers using DMA](https://www.youtube.com/watch?v=AloHXBk6Bfk)<br>
-[STM32CubeIDE basics - 10 ADC DMA TIM HAL lab](https://www.youtube.com/watch?v=pLsAhJ8umJk)<br>
-[create audio signals with PWM STM32F103C8](https://marcelmg.github.io/pwm_dac_sound/)<br>
-[STM32 TIMERS #1. PWM Output || DMA](https://www.youtube.com/watch?v=OwlfFp8fPN0)<br>
-[EmbeddedExpertIO](https://embeddedexpert.io/?p=858&fbclid=IwAR2bhHOcd__Dlb0FOMDrgP93dbdVjOlu2wdS3iJBXY4OYVTGU9i-guuQK3w)<br>
+### Special operation for testing CB. ADC A1 is reading current from DC-CT. If the current exceed a limit, it turns up/down a relay. <br>
+Next operation is to generate a sequence of operations on 3 different PWM channels. Initially I choose first channel TIM1_CH1 (PA8) for output. <br>
+So for PWM the timer is TIM1. <br>
+<img alt="NO IMAGE" src="pwm01.jpg"><br><br>
