@@ -69,6 +69,23 @@ static void MX_TIM1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+typedef struct __SEQUENCE
+{
+	int stone1;
+	int duration1;
+	int stone2;
+	int duration2;
+	int stone3;
+	int duration3;
+} PULSEQUENCE;
+
+PULSEQUENCE pulses = {1000, 10, 1330, 15, 1650, 18};
+uint32_t mscount = 0;
+uint32_t _pulse_count = 0;
+
+uint8_t usb_rx_buffer[64];
+volatile uint8_t flag_usbrx = 0;
+
 char strA1[50];
 volatile uint16_t ad1_raw[5];
 const int adcChannelCount = 1;
@@ -82,6 +99,7 @@ uint8_t buf_num = 1;
 uint32_t buf1[5000];
 uint32_t buf2[5000];
 
+uint8_t flag_pulse_out = 0;
 uint32_t *buf = buf2;
 
 long map(long x, long in_min, long in_max, long out_min, long out_max)
@@ -187,11 +205,84 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 /**************************
  * Following callback did not worked. It was referenced from drive.google/ARM/docs.drop/PRIMARY/ARM-CMSIS-7.html
  * Documentation. Please update the docs in the proper places. This callback may work by applying proper
- * configuration. Instead we are using HAL_GetTick() which is same as millis().
+ * configuration. Instead we are using HAL_GetTick() which is same as millis(). To enable this callback to work
+ * add HAL_SYSTICK_IRQHandler(); to stm32f4xx_it.c -> void SysTick_Handler(void)
  */
 void HAL_SYSTICK_Callback(void)
 {
-	millis++;
+	if(flag_pulse_out == 1)
+	{
+		millis++;
+
+		if(millis > pulses.stone3)
+		{
+			if(_pulse_count < pulses.duration3)
+			{
+				_pulse_count++;
+				if(_pulse_count < pulses.duration3)
+				{
+					TIM1->CCR3 = 200;
+				}
+				else
+				{
+					TIM1->CCR3 = 0;
+
+					// END THIS PULSE SEQUENCE
+					flag_pulse_out = 0;
+					millis = 0;
+					_pulse_count = 0;
+				}
+			}
+		}
+		else if(millis > pulses.stone2)
+		{
+			if(_pulse_count < pulses.duration2)
+			{
+				_pulse_count++;
+				if(_pulse_count < pulses.duration2)
+				{
+					TIM1->CCR2 = 200;
+				}
+				else
+				{
+					TIM1->CCR2 = 0;
+				}
+			}
+
+			if(millis == pulses.stone3)
+			{
+				_pulse_count = 0;
+			}
+		}
+		else if(millis > pulses.stone1)
+		{
+			if(_pulse_count < pulses.duration1)
+			{
+				_pulse_count++;
+				if(_pulse_count < pulses.duration1)
+				{
+					TIM1->CCR1 = 200;
+				}
+				else
+				{
+					TIM1->CCR1 = 0;
+				}
+			}
+
+			if(millis == pulses.stone2)
+			{
+				_pulse_count = 0;
+			}
+		}
+	}
+}
+
+void enableTriggerOut(char *buff)
+{
+	if(buff[0] == '1')
+	{
+		flag_pulse_out = 1;
+	}
 }
 
 /* USER CODE END 0 */
@@ -243,13 +334,17 @@ int main(void)
 
   // <PWM OUTPUT>
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
   TIM1->CCR1 = 0;
   b_shot = HAL_GetTick();
   HAL_Delay(1);
   TIM1->CCR1 = 0;
+  TIM1->CCR2 = 0;
+  TIM1->CCR3 = 0;
 
-  //CDC_Init_FS();
+  // <NO NEED> CDC_Init_FS();
 
   /* USER CODE END 2 */
 
@@ -275,16 +370,16 @@ int main(void)
 			  //HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
 		  }
 
-		  CDC_Transmit_FS(".", 1);
+		  //// CDC_Transmit_FS(".", 1);
 	  }
 
 	  if(HAL_GetTick() > (b_shot + 3000))
 	  {
 		  b_shot = HAL_GetTick();
 
-		  TIM1->CCR1 = 250;
-		  HAL_Delay(10);
-		  TIM1->CCR1 = 0;
+		  //TIM1->CCR1 = 250;
+		  //HAL_Delay(10);
+		  //TIM1->CCR1 = 0;
 
 		  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 
@@ -293,6 +388,14 @@ int main(void)
 		  //ad1_audio = ad1_raw[0] / 32;
 		  //TIM1->CCR1 = ad1_audio;
 	  }
+
+	  if(flag_usbrx == 1)
+	  {
+		  CDC_Transmit_FS(usb_rx_buffer, strlen(usb_rx_buffer));
+		  flag_usbrx = 0;
+		  enableTriggerOut(usb_rx_buffer);
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -454,8 +557,12 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 10;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 0;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
