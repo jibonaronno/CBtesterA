@@ -221,7 +221,7 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration3)
 				{
-					TIM1->CCR3 = 200;
+					TIM1->CCR3 = 130;
 				}
 				else
 				{
@@ -241,7 +241,7 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration2)
 				{
-					TIM1->CCR2 = 200;
+					TIM1->CCR2 = 130;
 				}
 				else
 				{
@@ -261,7 +261,7 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration1)
 				{
-					TIM1->CCR1 = 200;
+					TIM1->CCR1 = 130;
 				}
 				else
 				{

@@ -762,9 +762,9 @@ void HAL_SYSTICK_Callback(void)
  80007f8:	429a      	cmp	r2, r3
  80007fa:	d903      	bls.n	8000804 <HAL_SYSTICK_Callback+0x54>
 				{
-					TIM1->CCR3 = 200;
+					TIM1->CCR3 = 130;
  80007fc:	4b3a      	ldr	r3, [pc, #232]	; (80008e8 <HAL_SYSTICK_Callback+0x138>)
- 80007fe:	22c8      	movs	r2, #200	; 0xc8
+ 80007fe:	2282      	movs	r2, #130	; 0x82
  8000800:	63da      	str	r2, [r3, #60]	; 0x3c
 			{
 				_pulse_count = 0;
@@ -821,9 +821,9 @@ void HAL_SYSTICK_Callback(void)
  800084c:	681b      	ldr	r3, [r3, #0]
  800084e:	429a      	cmp	r2, r3
  8000850:	d903      	bls.n	800085a <HAL_SYSTICK_Callback+0xaa>
-					TIM1->CCR2 = 200;
+					TIM1->CCR2 = 130;
  8000852:	4b25      	ldr	r3, [pc, #148]	; (80008e8 <HAL_SYSTICK_Callback+0x138>)
- 8000854:	22c8      	movs	r2, #200	; 0xc8
+ 8000854:	2282      	movs	r2, #130	; 0x82
  8000856:	639a      	str	r2, [r3, #56]	; 0x38
  8000858:	e002      	b.n	8000860 <HAL_SYSTICK_Callback+0xb0>
 					TIM1->CCR2 = 0;
@@ -874,9 +874,9 @@ void HAL_SYSTICK_Callback(void)
  80008a4:	681b      	ldr	r3, [r3, #0]
  80008a6:	429a      	cmp	r2, r3
  80008a8:	d903      	bls.n	80008b2 <HAL_SYSTICK_Callback+0x102>
-					TIM1->CCR1 = 200;
+					TIM1->CCR1 = 130;
  80008aa:	4b0f      	ldr	r3, [pc, #60]	; (80008e8 <HAL_SYSTICK_Callback+0x138>)
- 80008ac:	22c8      	movs	r2, #200	; 0xc8
+ 80008ac:	2282      	movs	r2, #130	; 0x82
  80008ae:	635a      	str	r2, [r3, #52]	; 0x34
  80008b0:	e002      	b.n	80008b8 <HAL_SYSTICK_Callback+0x108>
 					TIM1->CCR1 = 0;
