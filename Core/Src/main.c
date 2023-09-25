@@ -195,7 +195,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	if(kalman_adc_int > 320)
 	{
 		trip1 = 1;
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+		//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+
+		//flag_pulse_out = 1;
 	}
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ad1_raw, adcChannelCount);
@@ -221,16 +223,18 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration3)
 				{
-					TIM1->CCR3 = 130;
+					TIM1->CCR2 = 130;
 				}
 				else
 				{
-					TIM1->CCR3 = 0;
+					TIM1->CCR2 = 0;
 
 					// END THIS PULSE SEQUENCE
 					flag_pulse_out = 0;
 					millis = 0;
 					_pulse_count = 0;
+					trip1 = 1;
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 				}
 			}
 		}
@@ -241,17 +245,25 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration2)
 				{
-					TIM1->CCR2 = 130;
+					TIM1->CCR3 = 130;
 				}
 				else
 				{
-					TIM1->CCR2 = 0;
+					TIM1->CCR3 = 0;
 				}
+			}
+
+			if(millis == (pulses.stone2 + 100))
+			{
+				trip1 = 1;
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 			}
 
 			if(millis == pulses.stone3)
 			{
 				_pulse_count = 0;
+//				trip1 = 1;
+//				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 			}
 		}
 		else if(millis > pulses.stone1)
@@ -266,6 +278,8 @@ void HAL_SYSTICK_Callback(void)
 				else
 				{
 					TIM1->CCR1 = 0;
+					trip1 = 1;
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 				}
 			}
 
@@ -282,6 +296,7 @@ void enableTriggerOut(char *buff)
 	if(buff[0] == '1')
 	{
 		flag_pulse_out = 1;
+
 	}
 }
 
