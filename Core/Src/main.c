@@ -79,7 +79,10 @@ typedef struct __SEQUENCE
 	int duration3;
 } PULSEQUENCE;
 
-PULSEQUENCE pulses = {1000, 10, 1330, 15, 1650, 18};
+//PULSEQUENCE pulses = {1000, 10, 1330, 15, 1650, 18};
+
+PULSEQUENCE pulses = {160, 10, 330, 15, 550, 18};
+
 uint32_t mscount = 0;
 uint32_t _pulse_count = 0;
 
@@ -210,6 +213,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
  * configuration. Instead we are using HAL_GetTick() which is same as millis(). To enable this callback to work
  * add HAL_SYSTICK_IRQHandler(); to stm32f4xx_it.c -> void SysTick_Handler(void)
  */
+#define MAX_PWM_ALL		20
+uint32_t _pwm_slope = 0;
 void HAL_SYSTICK_Callback(void)
 {
 	if(flag_pulse_out == 1)
@@ -223,18 +228,24 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration3)
 				{
-					TIM1->CCR2 = 130;
+					if(_pwm_slope < MAX_PWM_ALL)
+					{
+						_pwm_slope += (MAX_PWM_ALL / pulses.duration3);
+						TIM1->CCR2 = _pwm_slope;
+					}
 				}
 				else
 				{
 					TIM1->CCR2 = 0;
 
 					// END THIS PULSE SEQUENCE
+					_pwm_slope = 0;
 					flag_pulse_out = 0;
 					millis = 0;
 					_pulse_count = 0;
 					trip1 = 1;
 					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 				}
 			}
 		}
@@ -245,11 +256,16 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration2)
 				{
-					TIM1->CCR3 = 130;
+					if(_pwm_slope < MAX_PWM_ALL)
+					{
+						_pwm_slope += ((MAX_PWM_ALL / pulses.duration2) + 1);
+						TIM1->CCR3 = _pwm_slope;
+					}
 				}
 				else
 				{
 					TIM1->CCR3 = 0;
+					_pwm_slope = 0;
 				}
 			}
 
@@ -273,14 +289,30 @@ void HAL_SYSTICK_Callback(void)
 				_pulse_count++;
 				if(_pulse_count < pulses.duration1)
 				{
-					TIM1->CCR1 = 130;
+					if(_pwm_slope < MAX_PWM_ALL)
+					{
+						_pwm_slope += ((MAX_PWM_ALL / pulses.duration1) + 1);
+						TIM1->CCR1 = _pwm_slope;
+					}
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 				}
 				else
 				{
 					TIM1->CCR1 = 0;
+					_pwm_slope = 0;
 					trip1 = 1;
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+
+					//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+					//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 				}
+			}
+			else
+			{
+				////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+				////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 			}
 
 			if(millis == pulses.stone2)
@@ -289,6 +321,111 @@ void HAL_SYSTICK_Callback(void)
 			}
 		}
 	}
+
+	if(flag_pulse_out == 2)
+		{
+			millis++;
+
+			if(millis > pulses.stone3)
+			{
+				if(_pulse_count < pulses.duration3)
+				{
+					_pulse_count++;
+					if(_pulse_count < pulses.duration3)
+					{
+						if(_pwm_slope < MAX_PWM_ALL)
+						{
+							_pwm_slope += (MAX_PWM_ALL / pulses.duration3);
+							TIM1->CCR2 = _pwm_slope;
+						}
+					}
+					else
+					{
+						TIM1->CCR2 = 0;
+
+						// END THIS PULSE SEQUENCE
+						_pwm_slope = 0;
+						flag_pulse_out = 0;
+						millis = 0;
+						_pulse_count = 0;
+						trip1 = 1;
+						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+					}
+				}
+			}
+			else if(millis > pulses.stone2)
+			{
+				if(_pulse_count < pulses.duration2)
+				{
+					_pulse_count++;
+					if(_pulse_count < pulses.duration2)
+					{
+						if(_pwm_slope < MAX_PWM_ALL)
+						{
+							_pwm_slope += ((MAX_PWM_ALL / pulses.duration2) + 1);
+							TIM1->CCR3 = _pwm_slope;
+						}
+					}
+					else
+					{
+						TIM1->CCR3 = 0;
+						_pwm_slope = 0;
+					}
+				}
+
+				if(millis == (pulses.stone2 + 100))
+				{
+					trip1 = 1;
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET); //// TEST was PIN0
+				}
+
+				if(millis == pulses.stone3)
+				{
+					_pulse_count = 0;
+	//				trip1 = 1;
+	//				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+				}
+			}
+			else if(millis > pulses.stone1)
+			{
+				if(_pulse_count < pulses.duration1)
+				{
+					_pulse_count++;
+					if(_pulse_count < pulses.duration1)
+					{
+						if(_pwm_slope < MAX_PWM_ALL)
+						{
+							_pwm_slope += ((MAX_PWM_ALL / pulses.duration1) + 1);
+							TIM1->CCR1 = _pwm_slope;
+						}
+						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+					}
+					else
+					{
+						TIM1->CCR1 = 0;
+						_pwm_slope = 0;
+						trip1 = 1;
+						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+
+						//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+						//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+					}
+				}
+				else
+				{
+					////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+					////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+				}
+
+				if(millis == pulses.stone2)
+				{
+					_pulse_count = 0;
+				}
+			}
+		}
 }
 
 void enableTriggerOut(char *buff)
@@ -296,7 +433,11 @@ void enableTriggerOut(char *buff)
 	if(buff[0] == '1')
 	{
 		flag_pulse_out = 1;
+	}
 
+	if(buff[0] == '2')
+	{
+		flag_pulse_out = 2;
 	}
 }
 
@@ -340,6 +481,15 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+
+  	 //// TESTING
+  ////HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
+  /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 
   //HAL_DMA_Start_IT(&hdma_adc1, SrcAddress, DstAddress, DataLength);
 
@@ -538,7 +688,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 32;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 254;
+  htim1.Init.Period = 32;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -677,10 +827,26 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PB0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : PA6 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0 PB1 PB2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
