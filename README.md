@@ -20,3 +20,5 @@ ___
 Next operation is to generate a sequence of operations on 3 different PWM channels. Initially I choose first channel TIM1_CH1 (PA8) for output. <br>
 So for PWM the timer is TIM1. <br>
 <img alt="NO IMAGE" src="pwm01.jpg"><br><br>
+<img alt="NO IMAGE" src="TIM1_PWM.png"><br><br>
+<img alt="NO IMAGE" src="TIM1_PWM.png"><br><br>
