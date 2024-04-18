@@ -22,3 +22,5 @@ So for PWM the timer is TIM1. <br>
 <img alt="NO IMAGE" src="pwm01.jpg"><br><br>
 <img alt="NO IMAGE" src="TIM1_PWM.png"><br><br>
 <img alt="NO IMAGE" src="TIM1_PWM.png"><br><br>
+Since Prescaler is 32 and Aureload Preload is 254, The Timer1 Tick frequency is 10334 hertz. <br>
+Value 130 is is near to 50% duty cycle. <br>
