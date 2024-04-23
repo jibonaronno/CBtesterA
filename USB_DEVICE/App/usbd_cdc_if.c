@@ -33,8 +33,9 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-extern uint8_t usb_rx_buffer[64];
+extern uint8_t usb_rx_buffer[264];
 extern uint8_t flag_usbrx;
+extern int rx_buffer_content_size;
 
 /* USER CODE END PV */
 
@@ -268,10 +269,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
-  	memset (usb_rx_buffer, '\0', 64);  // clear the buffer
+  	// memset (usb_rx_buffer, '\0', 64);  // clear the buffer
     uint32_t len = (uint32_t)*Len;
     memcpy(usb_rx_buffer, Buf, len);  // copy the data to the buffer
     memset(Buf, '\0', len);   // clear the Buf also
+    rx_buffer_content_size = len; // This rx_buffer_content_size variable will be used in main to
+    // copy the buffer data until end of stream detected.
 
     flag_usbrx = 1;
 

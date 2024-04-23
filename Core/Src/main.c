@@ -6,15 +6,21 @@
   ******************************************************************************
   * @attention
   *
+  * This [signal_gen] branch does not have complete code of CBTester functionalities. Switch to TCT branch
+  * for the full CBTester codes.
+  *
   * This code is written for BlackPill STM32F401CCU6 which has USB-C connector.
   * It also has DFU out of the box. But it does not work on Win7 Laptop properly.
   * USB DFU Mode once or twice, When I activated CDC USB VCP, after that Win7
   * cannot identify the DFU device. But the VCP is okay.
   *
-  * In This code I am trying to achive Audio In and Out through ADC and DAC. For
-  * This I am enabling Timer2 Triggered ADC conversion with DMA support.
-  * This code is inspired from https://www.youtube.com/watch?v=AloHXBk6Bfk -
-  * Set up multiple ADCs on STM32 microcontrollers using DMA video.
+  * This branch called signal_gen is for generating signals by receiving an array data from
+  * VCP. Callback upon data receive is in static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
+  * function from USB_DEVICE/App/usbd_cdc_if.c file. Need to receive 100 to 200 integer or float data
+  * to an array.
+  *
+  *
+  *
   *
   ******************************************************************************
   */
@@ -88,6 +94,7 @@ uint32_t _pulse_count = 0;
 
 uint8_t usb_rx_buffer[64];
 volatile uint8_t flag_usbrx = 0;
+int rx_buffer_content_size = 0;
 
 char strA1[50];
 volatile uint16_t ad1_raw[5];
