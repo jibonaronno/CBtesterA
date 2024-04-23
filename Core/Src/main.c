@@ -81,7 +81,7 @@ typedef struct __SEQUENCE
 
 //PULSEQUENCE pulses = {1000, 10, 1330, 15, 1650, 18};
 
-PULSEQUENCE pulses = {160, 10, 330, 15, 550, 18};
+PULSEQUENCE pulses = {460, 250, 830, 355, 1650, 258};
 
 uint32_t mscount = 0;
 uint32_t _pulse_count = 0;
@@ -102,6 +102,7 @@ uint8_t buf_num = 1;
 uint32_t buf1[5000];
 uint32_t buf2[5000];
 
+uint8_t flag_send_bufferA = 0;
 uint8_t flag_pulse_out = 0;
 uint32_t *buf = buf2;
 
@@ -231,12 +232,12 @@ void HAL_SYSTICK_Callback(void)
 					if(_pwm_slope < MAX_PWM_ALL)
 					{
 						_pwm_slope += (MAX_PWM_ALL / pulses.duration3);
-						TIM1->CCR2 = _pwm_slope;
+						TIM1->CCR3 = _pwm_slope;
 					}
 				}
 				else
 				{
-					TIM1->CCR2 = 0;
+					TIM1->CCR3 = 0;
 
 					// END THIS PULSE SEQUENCE
 					_pwm_slope = 0;
@@ -259,12 +260,12 @@ void HAL_SYSTICK_Callback(void)
 					if(_pwm_slope < MAX_PWM_ALL)
 					{
 						_pwm_slope += ((MAX_PWM_ALL / pulses.duration2) + 1);
-						TIM1->CCR3 = _pwm_slope;
+						TIM1->CCR1 = _pwm_slope;
 					}
 				}
 				else
 				{
-					TIM1->CCR3 = 0;
+					TIM1->CCR1 = 0;
 					_pwm_slope = 0;
 				}
 			}
@@ -272,7 +273,7 @@ void HAL_SYSTICK_Callback(void)
 			if(millis == (pulses.stone2 + 100))
 			{
 				trip1 = 1;
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 			}
 
 			if(millis == pulses.stone3)
@@ -292,17 +293,19 @@ void HAL_SYSTICK_Callback(void)
 					if(_pwm_slope < MAX_PWM_ALL)
 					{
 						_pwm_slope += ((MAX_PWM_ALL / pulses.duration1) + 1);
-						TIM1->CCR1 = _pwm_slope;
+						// TIM1->CCR1 = _pwm_slope; // CCR1 should be trip signal
+						TIM1->CCR3 = _pwm_slope; 	// CCR3 should be close signal
 					}
 					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 				}
 				else
 				{
-					TIM1->CCR1 = 0;
+					//TIM1->CCR1 = 0; 	// CCR1 should be trip signal
+					TIM1->CCR3 = 0; 	// CCR3 should be close signal
 					_pwm_slope = 0;
 					trip1 = 1;
-					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+					//// HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 					//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 
 					//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
@@ -336,12 +339,12 @@ void HAL_SYSTICK_Callback(void)
 						if(_pwm_slope < MAX_PWM_ALL)
 						{
 							_pwm_slope += (MAX_PWM_ALL / pulses.duration3);
-							TIM1->CCR2 = _pwm_slope;
+							TIM1->CCR3 = _pwm_slope; // Trip
 						}
 					}
 					else
 					{
-						TIM1->CCR2 = 0;
+						TIM1->CCR3 = 0; // Trip
 
 						// END THIS PULSE SEQUENCE
 						_pwm_slope = 0;
@@ -350,7 +353,7 @@ void HAL_SYSTICK_Callback(void)
 						_pulse_count = 0;
 						trip1 = 1;
 						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 					}
 				}
 			}
@@ -364,12 +367,12 @@ void HAL_SYSTICK_Callback(void)
 						if(_pwm_slope < MAX_PWM_ALL)
 						{
 							_pwm_slope += ((MAX_PWM_ALL / pulses.duration2) + 1);
-							TIM1->CCR3 = _pwm_slope;
+							TIM1->CCR1 = _pwm_slope; // Trip
 						}
 					}
 					else
 					{
-						TIM1->CCR3 = 0;
+						TIM1->CCR1 = 0; // Trip Event
 						_pwm_slope = 0;
 					}
 				}
@@ -377,14 +380,14 @@ void HAL_SYSTICK_Callback(void)
 				if(millis == (pulses.stone2 + 100))
 				{
 					trip1 = 1;
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET); //// TEST was PIN0
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //// TEST was PIN0
 				}
 
 				if(millis == pulses.stone3)
 				{
 					_pulse_count = 0;
 	//				trip1 = 1;
-	//				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 				}
 			}
 			else if(millis > pulses.stone1)
@@ -397,18 +400,18 @@ void HAL_SYSTICK_Callback(void)
 						if(_pwm_slope < MAX_PWM_ALL)
 						{
 							_pwm_slope += ((MAX_PWM_ALL / pulses.duration1) + 1);
-							TIM1->CCR1 = _pwm_slope;
+							TIM1->CCR3 = _pwm_slope; // Close Event
 						}
 						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 					}
 					else
 					{
-						TIM1->CCR1 = 0;
+						TIM1->CCR3 = 0; // Close Event
 						_pwm_slope = 0;
 						trip1 = 1;
 						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-						//// TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 
 						//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
 						//// TEST HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
@@ -416,7 +419,7 @@ void HAL_SYSTICK_Callback(void)
 				}
 				else
 				{
-					////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 					////TEST HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 				}
 
@@ -439,6 +442,19 @@ void enableTriggerOut(char *buff)
 	{
 		flag_pulse_out = 2;
 	}
+
+	if(buff[0] == '3')
+	{
+		flag_send_bufferA = 1;
+	}
+}
+
+void ManualSequence(char *buff)
+{
+	if(buff[0] == '3')
+	{
+
+	}
 }
 
 /* USER CODE END 0 */
@@ -453,7 +469,7 @@ int main(void)
 
   uint32_t a_shot = 0;
   uint32_t b_shot = 0;
-
+  uint32_t lidxA = 0;
 
   /* USER CODE END 1 */
 
@@ -526,9 +542,32 @@ int main(void)
 			  //ad1_audio = ad1_raw[0] / 32; // map(ad1_raw[1], 0, 4096, 0, 254);
 			  //sprintf(strA1, "A1:%d,Rate:%d,Map:%d\n", ad1_raw[0], conv_rate, ad1_audio);
 			  sprintf(strA1, "A1:%d,Kalman:%d,Map:%d,Rate:%d\n", ad1_raw[0], kalman_adc_int, ad1_audio, conv_rate); // @suppress("Float formatting support")
-			  CDC_Transmit_FS(strA1, strlen(strA1));
+
 			  conv_rate = 0;
 			  //TIM1->CCR1 = ad1_audio;
+
+			  if(flag_send_bufferA == 1)
+			  {
+				  flag_send_bufferA = 0;
+				  for(lidxA=0;lidxA<128;lidxA++)
+				  {
+					  if(buf_num == 2)
+					  {
+						  sprintf(strA1, "%d,%d\n", buf1[lidxA], buf1[lidxA + 50]);
+					  }
+					  else
+					  {
+						  sprintf(strA1, "%d,%d\n", buf2[lidxA],buf2[lidxA+100]);
+					  }
+					  CDC_Transmit_FS(strA1, strlen(strA1));
+					  HAL_Delay(20);
+
+				  }
+			  }
+			  else
+			  {
+				  // CDC_Transmit_FS(strA1, strlen(strA1));
+			  }
 
 			  //In the video example following function is called at the end of every conversion.
 			  //But my goal is to start the conversion from the trigger of the TIM2
@@ -556,7 +595,7 @@ int main(void)
 
 	  if(flag_usbrx == 1)
 	  {
-		  CDC_Transmit_FS(usb_rx_buffer, strlen(usb_rx_buffer));
+		  // CDC_Transmit_FS(usb_rx_buffer, strlen(usb_rx_buffer));
 		  flag_usbrx = 0;
 		  enableTriggerOut(usb_rx_buffer);
 	  }
